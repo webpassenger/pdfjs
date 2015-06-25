@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>'Hello, world!' example</title>
+    <script src="js/util.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/metadata.js"></script>
+    <script src="js/canvas.js"></script>
+    <script src="js/webgl.js"></script>
+    <script src="js/pattern_helper.js"></script>
+    <script src="js/font_loader.js"></script>
+    <script src="js/annotation_helper.js"></script>
+    <script src="recorder.js"></script>
+    <script src="jquery-1.11.3.min.js"></script>
+</head>
+<body>
+
+<canvas id="the-canvas" style="border:1px  solid black; float: left;"></canvas>
+<!--<canvas id="test-canvas" style="border:1px  solid black; float: left;"></canvas>-->
+<canvas id="final-canvas" style="border:1px  solid black; float: left; margin-left: 10px;" ></canvas>
+
+<!-- for legacy browsers add compatibility.js -->
+<script src="compatibility.js"></script>
+<script src="js/pdf.js"></script>
+<!--<script src="../../src/pdf.js"></script>-->
+
+<script id="script">
+
+  //
+  // If absolute URL from the remote server is provided, configure the CORS
+  // header on that server.
+  //
+  var url = 'mir_upakovki_2_(04.2015).pdf';
+//  var url = 'segodnya_kievskiy_vipusk_69_(04.2015).pdf';
+
+  //
+  // Disable workers to avoid yet another cross-origin issue (workers need
+  // the URL of the script to be loaded, and dynamically loading a cross-origin
+  // script does not work).
+  //
+  // PDFJS.disableWorker = true;
+
+  //
+  // In cases when the pdf.worker.js is located at the different folder than the
+  // pdf.js's one, or the pdf.js is executed via eval(), the workerSrc property
+  // shall be specified.
+  //
+  PDFJS.workerSrc = 'js/pdf.worker.js';
+  //PDFJS.workerSrc = '../../src/worker_loader.js';
+
+  //
+  // Asynchronous download PDF
+  //
+
+  console.log(url);
+  PDFJS.getDocument(url).then(function getPdfHelloWorld(pdf) {
+    //
+    // Fetch a page
+    //
+    pdf.getPage(3).then(function getPageHelloWorld(page) {
+      var scale = 1.5;
+      var viewport = page.getViewport(scale);
+      //
+      // Prepare canvas using PDF page dimensions
+      //
+      var canvas = document.getElementById('the-canvas');
+      context = canvas.getContext('2d');
+      var fake_canvas = document.getElementById('fake-canvas');
+      recorder = new Recorder();//fake_canvas.getContext('2d');
+      recorder.page = {
+          name: url,
+          scale: scale,
+          viewport: {
+              height: viewport.height,
+              width: viewport.width
+          },
+          number: page.pageIndex+1
+      };
+      final_canvas = document.getElementById('final-canvas');
+      final_context = final_canvas.getContext('2d');
+
+      RecorderExtension(context);
+
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      final_canvas.height = viewport.height;
+      final_canvas.width = viewport.width;
+
+      //
+      // Render PDF page into canvas context
+      //
+      var renderContext = {
+        canvasContext: recorder,
+        viewport: viewport
+      };
+      page.render(renderContext).then(function(){
+        console.log('Page '+(page.pageIndex+1)+' rendered!!!');
+        recorder.getFonts();
+        setTimeout(recorder.optimizeCommands,1000);
+      });
+    });
+  });
+</script>
+
+<hr>
+<div id="testImages"></div>
+</body>
+</html>
